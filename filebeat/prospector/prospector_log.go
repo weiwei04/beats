@@ -58,6 +58,7 @@ func (p *ProspectorLog) Run() {
 
 	p.scan()
 
+	// 为什么不先执行LABEL_1处的?
 	// It is important that a first scan is run before cleanup to make sure all new states are read first
 	if p.config.CleanInactive > 0 || p.config.CleanRemoved {
 		beforeCount := p.Prospector.states.Count()
@@ -65,6 +66,7 @@ func (p *ProspectorLog) Run() {
 		logp.Debug("prospector", "Prospector states cleaned up. Before: %d, After: %d", beforeCount, beforeCount-cleanedStates)
 	}
 
+	// LABEL_1
 	// Marking removed files to be cleaned up. Cleanup happens after next scan to make sure all states are updated first
 	if p.config.CleanRemoved {
 		for _, state := range p.Prospector.states.GetStates() {
@@ -73,6 +75,9 @@ func (p *ProspectorLog) Run() {
 			if err != nil {
 				// Only clean up files where state is Finished
 				if state.Finished {
+					// 此处设置state.TTL为0，updateState操作会
+					// 1. 通知下游的registrar，这个记录失效，registrar会将这条记录删除
+					// 2. 更新p.Prospector.state自己的缓存，下一次p.Prospector.states.Cleanup()的时候会被删除
 					state.TTL = 0
 					event := input.NewEvent(state)
 					err := p.Prospector.updateState(event)

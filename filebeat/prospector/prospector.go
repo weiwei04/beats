@@ -161,6 +161,7 @@ func (p *Prospector) updateState(event *input.Event) error {
 
 	// Add ttl if cleanOlder is enabled and TTL is not already 0
 	if p.config.CleanInactive > 0 && event.State.TTL != 0 {
+		// renew lease
 		event.State.TTL = p.config.CleanInactive
 	}
 
