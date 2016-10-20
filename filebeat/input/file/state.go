@@ -120,6 +120,36 @@ func (s *States) Cleanup() int {
 	return statesBefore - len(s.states)
 }
 
+func (s *States) CleanupWithFunc(fn func(state State)) int {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	statesBefore := len(s.states)
+
+	currentTime := time.Now()
+	states := s.states[:0]
+
+	for _, state := range s.states {
+
+		ttl := state.TTL
+
+		if ttl == 0 || (ttl > 0 && currentTime.Sub(state.Timestamp) > ttl) {
+			if state.Finished {
+				logp.Debug("state", "State removed for %v because of older: %v", state.Source, ttl)
+				fn(state)
+				continue // drop state
+			} else {
+				logp.Err("State for %s should have been dropped, but couldn't as state is not finished.", state.Source)
+			}
+		}
+
+		states = append(states, state) // in-place copy old state
+	}
+	s.states = states
+
+	return statesBefore - len(s.states)
+}
+
 // Count returns number of states
 func (s *States) Count() int {
 	s.mutex.Lock()

@@ -270,6 +270,7 @@ func (r *Registrar) Stop() {
 }
 
 // writeRegistry writes the new json registry file to disk.
+// TODO: writeRegistry every `num` events instead of every events
 func (r *Registrar) writeRegistry() error {
 	logp.Debug("registrar", "Write registry file: %s", r.registryFile)
 
