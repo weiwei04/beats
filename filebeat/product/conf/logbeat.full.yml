@@ -1,0 +1,154 @@
+##################$$$###### Filebeat Configuration ############################
+
+# This file is a full configuration example documenting all non-deprecated
+# options in comments. For a shorter configuration example, that contains only
+# the most common options, please see filebeat.yml in the same directory.
+#
+# You can find the full configuration reference here:
+# https://www.elastic.co/guide/en/beats/filebeat/index.html
+
+#=========================== Filebeat prospectors =============================
+
+# List of prospectors to fetch data.
+filebeat.prospectors:
+#------------------------------ Log prospector --------------------------------
+- input_type: stdout
+
+  paths:
+    - "/disk1/mesos/slaves/*/frameworks/*/executors/*/runs/latest/stdout"
+  document_type: log
+  scan_frequency: 10s
+  #close_inactive: 1h
+  close_removed: true
+  clean_inactive: 1h
+  clean_removed: true
+
+- input_type: stderr
+
+  paths:
+    - "/disk1/mesos/slaves/*/frameworks/*/executors/*/runs/latest/stderr"
+  document_type: log
+  scan_frequency: 10s
+  #close_inactive: 1h
+  close_removed: true
+  clean_inactive: 1h
+  clean_removed: true
+
+- input_type: log
+
+  paths:
+    - "/disk1/mesos/slaves/*/frameworks/*/executors/*/runs/latest/log/*/*"
+  document_type: log
+  scan_frequency: 10s
+  #close_inactive: 1h
+  close_removed: true
+  clean_inactive: 1h
+  clean_removed: true
+
+#================================ Outputs ======================================
+
+# Configure what outputs to use when sending the data collected by the beat.
+# Multiple outputs may be used.
+
+#------------------------------- File output -----------------------------------
+#output.file:
+  # Boolean flag to enable or disable the output module.
+  #enabled: true
+
+  # Path to the directory where to save the generated files. The option is
+  # mandatory.
+  path: "/disk1/filebeat/output/"
+
+  # Name of the generated files. The default is `filebeat` and it generates
+  # files: `filebeat`, `filebeat.1`, `filebeat.2`, etc.
+  filename: filebeat
+
+  # Maximum size in kilobytes of each file. When this size is reached, and on
+  # every filebeat restart, the files are rotated. The default value is 10240
+  # kB.
+  rotate_every_kb: 10000
+
+  # Maximum number of files under path. When this number of files is reached,
+  # the oldest file is deleted and the rest are shifted from last to first. The
+  # default is 7 files.
+  number_of_files: 7
+
+
+#----------------------------- Console output ---------------------------------
+#output.console:
+  # Boolean flag to enable or disable the output module.
+  #enabled: true
+
+  # Pretty print json event
+  #pretty: false
+
+#================================= Paths ======================================
+
+# The home path for the filebeat installation. This is the default base path
+# for all other path settings and for miscellaneous files that come with the
+# distribution (for example, the sample dashboards).
+# If not set by a CLI flag or in the configuration file, the default for the
+# home path is the location of the binary.
+#path.home:
+
+# The configuration path for the filebeat installation. This is the default
+# base path for configuration files, including the main YAML configuration file
+# and the Elasticsearch template file. If not set by a CLI flag or in the
+# configuration file, the default for the configuration path is the home path.
+#path.config: ${path.home}
+
+# The data path for the filebeat installation. This is the default base path
+# for all the files in which filebeat needs to store its data. If not set by a
+# CLI flag or in the configuration file, the default for the data path is a data
+# subdirectory inside the home path.
+#path.data: ${path.home}/data
+
+# The logs path for a filebeat installation. This is the default location for
+# the Beat's log files. If not set by a CLI flag or in the configuration file,
+# the default for the logs path is a logs subdirectory inside the home path.
+#path.logs: ${path.home}/logs
+
+#================================ Logging ======================================
+# There are three options for the log output: syslog, file, stderr.
+# Under Windows systems, the log files are per default sent to the file output,
+# under all other system per default to syslog.
+
+# Sets log level. The default log level is info.
+# Available log levels are: critical, error, warning, info, debug
+logging.level: info
+
+# Enable debug output for selected components. To enable all selectors use ["*"]
+# Other available selectors are "beat", "publish", "service"
+# Multiple selectors can be chained.
+#logging.selectors: [ ]
+
+# Send all logging output to syslog. The default is false.
+#logging.to_syslog: true
+
+# If enabled, filebeat periodically logs its internal metrics that have changed
+# in the last period. For each metric that changed, the delta from the value at
+# the beginning of the period is logged. Also, the total values for
+# all non-zero internal metrics are logged on shutdown. The default is true.
+#logging.metrics.enabled: true
+
+# The period after which to log the internal metrics. The default is 30s.
+#logging.metrics.period: 30s
+
+# Logging to rotating files files. Set logging.to_files to false to disable logging to
+# files.
+logging.to_files: true
+logging.files:
+  # Configure the path where the logs are written. The default is the logs directory
+  # under the home path (the binary location).
+  path: /disk1/filebeat/log/
+
+  # The name of the files where the logs are written to.
+  #name: filebeat
+
+  # Configure log file size limit. If limit is reached, log file will be
+  # automatically rotated
+  rotateeverybytes: 10485760 # = 10MB
+
+  # Number of rotated log files to keep. Oldest files will be deleted first.
+  keepfiles: 7
+
