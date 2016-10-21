@@ -12,37 +12,40 @@
 # List of prospectors to fetch data.
 filebeat.prospectors:
 #------------------------------ Log prospector --------------------------------
-- input_type: stdout
+- input_type: log
 
   paths:
     - "/disk1/mesos/slaves/*/frameworks/*/executors/*/runs/latest/stdout"
-  document_type: log
-  scan_frequency: 10s
+  document_type: stdout
+  scan_frequency: 30s
   #close_inactive: 1h
+  ignore_older: 5m
   close_removed: true
-  clean_inactive: 1h
+  clean_inactive: 10m
   clean_removed: true
 
-- input_type: stderr
+- input_type: log
 
   paths:
     - "/disk1/mesos/slaves/*/frameworks/*/executors/*/runs/latest/stderr"
-  document_type: log
-  scan_frequency: 10s
+  document_type: stderr
+  scan_frequency: 30s
   #close_inactive: 1h
   close_removed: true
-  clean_inactive: 1h
+  ignore_older: 5m
+  clean_inactive: 10m
   clean_removed: true
 
 - input_type: log
 
   paths:
     - "/disk1/mesos/slaves/*/frameworks/*/executors/*/runs/latest/log/*/*"
-  document_type: log
-  scan_frequency: 10s
+  document_type: sandbox
+  scan_frequency: 30s
   #close_inactive: 1h
+  ignore_older: 5m
   close_removed: true
-  clean_inactive: 1h
+  clean_inactive: 10m
   clean_removed: true
 
 #================================ Outputs ======================================
@@ -51,9 +54,9 @@ filebeat.prospectors:
 # Multiple outputs may be used.
 
 #------------------------------- File output -----------------------------------
-#output.file:
+output.file:
   # Boolean flag to enable or disable the output module.
-  #enabled: true
+  enabled: true
 
   # Path to the directory where to save the generated files. The option is
   # mandatory.
@@ -66,7 +69,7 @@ filebeat.prospectors:
   # Maximum size in kilobytes of each file. When this size is reached, and on
   # every filebeat restart, the files are rotated. The default value is 10240
   # kB.
-  rotate_every_kb: 10000
+  rotate_every_kb: 524288000
 
   # Maximum number of files under path. When this number of files is reached,
   # the oldest file is deleted and the rest are shifted from last to first. The
@@ -115,12 +118,12 @@ filebeat.prospectors:
 
 # Sets log level. The default log level is info.
 # Available log levels are: critical, error, warning, info, debug
-logging.level: info
+logging.level: debug
 
 # Enable debug output for selected components. To enable all selectors use ["*"]
 # Other available selectors are "beat", "publish", "service"
 # Multiple selectors can be chained.
-#logging.selectors: [ ]
+logging.selectors: ["TRACE"]
 
 # Send all logging output to syslog. The default is false.
 #logging.to_syslog: true
@@ -140,14 +143,14 @@ logging.to_files: true
 logging.files:
   # Configure the path where the logs are written. The default is the logs directory
   # under the home path (the binary location).
-  path: /disk1/filebeat/log/
+  path: /home/qboxserver/logbeat/log/
 
   # The name of the files where the logs are written to.
-  #name: filebeat
+  name: logbeat-info
 
   # Configure log file size limit. If limit is reached, log file will be
   # automatically rotated
-  rotateeverybytes: 10485760 # = 10MB
+  rotateeverybytes: 524288000 # = 500MB
 
   # Number of rotated log files to keep. Oldest files will be deleted first.
   keepfiles: 7

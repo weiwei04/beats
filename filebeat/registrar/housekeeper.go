@@ -75,6 +75,7 @@ func (h *HouseKeeper) Run() {
 }
 
 func (h *HouseKeeper) Cleanup() {
+	logp.Debug("TRACE", "housekeeper cleanup inactive files")
 	states := h.states.GetStates()
 
 	// key: dirname, value: file states
@@ -94,6 +95,7 @@ func (h *HouseKeeper) Cleanup() {
 		timeoutStates = append(timeoutStates, state)
 	})
 
+	count := 0
 	// TODO: for stderr
 	// TODO: for stdout
 	// TODO: remove file size > xxx
@@ -105,10 +107,12 @@ func (h *HouseKeeper) Cleanup() {
 				logp.Err("remove file failed, err[%s]", err)
 			}
 			dirs[dir].Remove(state)
+			count++
 		} else {
 			logp.Info("last inactive log file[%s], will not delete", state.Source)
 		}
 	}
+	logp.Debug("TRACE", "housekeeper cleanup %d inactive files", count)
 }
 
 func (h *HouseKeeper) Stop() {
