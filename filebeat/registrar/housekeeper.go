@@ -1,4 +1,4 @@
-package housekeeper
+package registrar
 
 import (
 	"sync"
@@ -12,7 +12,7 @@ import (
 )
 
 type HouseKeeper struct {
-	in              <-chan []*input.Event
+	in              chan []*input.Event
 	done            chan struct{}
 	states          *file.States
 	wg              sync.WaitGroup
@@ -20,14 +20,19 @@ type HouseKeeper struct {
 	remove          func(name string) error
 }
 
-func New(in chan []*input.Event, states *file.States, rmFunc func(name string) error, cleanupInterval int64) *HouseKeeper {
+func NewHouseKeeper(states *file.States, cleanupInterval int64, rmFunc func(name string) error) *HouseKeeper {
 	return &HouseKeeper{
-		in:              in,
-		done:            make(chan struct{}, 10),
+		in:              make(chan []*input.Event, 10),
+		done:            make(chan struct{}),
 		states:          states,
 		cleanupInterval: cleanupInterval,
 		remove:          rmFunc,
 	}
+}
+
+func (h *HouseKeeper) Published(events []*input.Event) bool {
+	h.in <- events
+	return true
 }
 
 func (h *HouseKeeper) Start() {
@@ -39,6 +44,7 @@ func (h *HouseKeeper) Run() {
 	logp.Info("Starting HouseKeeper")
 
 	defer func() {
+		h.Cleanup()
 		h.wg.Done()
 	}()
 
@@ -84,6 +90,7 @@ func (h *HouseKeeper) Cleanup() {
 
 	timeoutStates := []file.State{}
 	h.states.CleanupWithFunc(func(state file.State) {
+		logp.Info("file[%+v] inactive", state.Source)
 		timeoutStates = append(timeoutStates, state)
 	})
 
@@ -108,4 +115,5 @@ func (h *HouseKeeper) Stop() {
 	logp.Info("Stopping HouseKeeper")
 	close(h.done)
 	h.wg.Wait()
+	close(h.in)
 }

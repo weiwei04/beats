@@ -116,6 +116,8 @@ func (fb *Filebeat) Run(b *beat.Beat) error {
 		publisherChan.Close()
 		// Stopping spooler
 		spooler.Stop()
+		// Stopping housekeeper
+		houseKeeper.Stop()
 	}()
 
 	err = crawler.Start(registrar.GetStates(), *once)

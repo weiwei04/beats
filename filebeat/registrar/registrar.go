@@ -210,8 +210,21 @@ func (r *Registrar) Start() error {
 
 func (r *Registrar) Run() {
 	logp.Info("Starting Registrar")
+
+	houseKeeper := NewHouseKeeper(r.states.Copy(), 300, func(name string) error {
+		err := os.Remove(name)
+		if err != nil {
+			logp.Err("remove inactive file %s failed, err[%s]", err)
+		} else {
+			logp.Info("remove inactive file %s succ")
+		}
+		return err
+	})
+	houseKeeper.Start()
+
 	// Writes registry on shutdown
 	defer func() {
+		houseKeeper.Stop()
 		r.writeRegistry()
 		r.wg.Done()
 	}()
@@ -240,6 +253,7 @@ func (r *Registrar) Run() {
 			logp.Err("Writing of registry returned error: %v. Continuing...", err)
 		}
 
+		houseKeeper.Published(events)
 		if r.out != nil {
 			r.out.Published(events)
 		}

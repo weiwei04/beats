@@ -1,4 +1,4 @@
-package housekeeper
+package registrar
 
 import (
 	"sync"
@@ -11,10 +11,10 @@ import (
 )
 
 type eventSource struct {
-	event input.Event
-	out   chan<- []*input.Event
-	wg    sync.WaitGroup
-	done  chan struct{}
+	event       input.Event
+	houseKeeper *HouseKeeper
+	wg          sync.WaitGroup
+	done        chan struct{}
 }
 
 func (s *eventSource) Start() {
@@ -32,7 +32,7 @@ func (s *eventSource) Run() {
 			return
 		default:
 			s.event.State.TTL = 1 * time.Hour
-			s.out <- []*input.Event{&s.event}
+			s.houseKeeper.Published([]*input.Event{&s.event})
 		}
 	}
 }
@@ -69,7 +69,14 @@ func Test_HouseKeeper(t *testing.T) {
 	oldStates := file.States{}
 	oldStates.SetStates(states)
 
-	ch := make(chan []*input.Event)
+	actual := []string{}
+	rmFunc := func(name string) error {
+		actual = append(actual, name)
+		return nil
+	}
+	hk := NewHouseKeeper(&oldStates, 1, rmFunc)
+	hk.Start()
+
 	// start eventSource
 	eSource := eventSource{
 		event: input.Event{
@@ -79,22 +86,17 @@ func Test_HouseKeeper(t *testing.T) {
 				TTL:    1 * time.Hour,
 			},
 		},
-		out:  ch,
-		done: make(chan struct{}),
+		houseKeeper: hk,
+		done:        make(chan struct{}),
 	}
 	eSource.Start()
-
-	actual := []string{}
-	rmFunc := func(name string) error {
-		actual = append(actual, name)
-		return nil
-	}
-	hk := New(ch, &oldStates, rmFunc, 1)
-	hk.Start()
 
 	time.Sleep(5 * time.Second)
 
 	eSource.Stop()
+
+	time.Sleep(5 * time.Second)
+
 	hk.Stop()
 
 	assert.Equal(t, 1, len(actual))

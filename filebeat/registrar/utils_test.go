@@ -1,4 +1,4 @@
-package housekeeper
+package registrar
 
 import (
 	"testing"

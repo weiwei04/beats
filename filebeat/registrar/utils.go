@@ -1,4 +1,4 @@
-package housekeeper
+package registrar
 
 import (
 	"github.com/elastic/beats/filebeat/input/file"
