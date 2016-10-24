@@ -211,15 +211,7 @@ func (r *Registrar) Start() error {
 func (r *Registrar) Run() {
 	logp.Info("Starting Registrar")
 
-	houseKeeper := NewHouseKeeper(r.states.Copy(), 300, func(name string) error {
-		err := os.Remove(name)
-		if err != nil {
-			logp.Err("remove inactive file %s failed, err[%s]", err)
-		} else {
-			logp.Info("remove inactive file %s succ")
-		}
-		return err
-	})
+	houseKeeper := NewHouseKeeper(r.states.Copy(), 300, os.Remove)
 	houseKeeper.Start()
 
 	// Writes registry on shutdown

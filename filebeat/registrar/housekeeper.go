@@ -1,6 +1,7 @@
 package registrar
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -100,8 +101,13 @@ func (h *HouseKeeper) Cleanup() {
 	// TODO: for stdout
 	// TODO: remove file size > xxx
 	for _, state := range timeoutStates {
+		if strings.HasSuffix(state.Source, "stderr") || strings.HasSuffix(state.Source, "stdout") {
+			logp.Info("ignore last inactive file %s", state.Source)
+			continue
+		}
 		dir := dirname(state.Source)
 		if dirs[dir].Len() > 1 {
+			logp.Info("remove inactive file %s", state.Source)
 			err := h.remove(state.Source)
 			if err != nil {
 				logp.Err("remove file failed, err[%s]", err)
