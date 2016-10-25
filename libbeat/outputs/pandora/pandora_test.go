@@ -44,7 +44,7 @@ func Test_mapStrToSlice(t *testing.T) {
 	// stdout
 	mapStr := map[string]interface{}{
 		"type":       "stdout",
-		"message":    &logMessage,
+		"message":    logMessage,
 		"@timestamp": common.Time(logTime),
 		"source":     "/disk1/mesos/slaves/964ead97-8786-4e59-acf9-df3ecc19ee00-S16/frameworks/964ead97-8786-4e59-acf9-df3ecc19ee00-0000/executors/image.add97e1f-80ba-11e6-ba0c-6c92bf2f06d8.1474876587454367048/runs/latest/stdout",
 	}
@@ -66,7 +66,7 @@ func Test_mapStrToSlice(t *testing.T) {
 	// stderr
 	mapStr = map[string]interface{}{
 		"type":       "stderr",
-		"message":    &logMessage,
+		"message":    logMessage,
 		"@timestamp": common.Time(logTime),
 		"source":     "/disk1/mesos/slaves/964ead97-8786-4e59-acf9-df3ecc19ee00-S16/frameworks/964ead97-8786-4e59-acf9-df3ecc19ee00-0000/executors/image.add97e1f-80ba-11e6-ba0c-6c92bf2f06d8.1474876587454367048/runs/latest/stderr",
 	}
@@ -88,7 +88,7 @@ func Test_mapStrToSlice(t *testing.T) {
 	// user logs
 	mapStr = map[string]interface{}{
 		"type":       "sandbox",
-		"message":    &logMessage,
+		"message":    logMessage,
 		"@timestamp": common.Time(logTime),
 		"source":     "/disk1/mesos/slaves/964ead97-8786-4e59-acf9-df3ecc19ee00-S16/frameworks/964ead97-8786-4e59-acf9-df3ecc19ee00-0000/executors/image.add97e1f-80ba-11e6-ba0c-6c92bf2f06d8.1474876587454367048/runs/latest/log/0/1",
 	}

@@ -109,7 +109,7 @@ func mapStrToSlice(hostname string, event common.MapStr) []psdk.PointField {
 
 	fields = append(fields, psdk.PointField{Key: "hostname", Value: hostname})
 
-	message := *event["message"].(*string)
+	message := event["message"].(string)
 	fields = append(fields, psdk.PointField{Key: "message", Value: escapeString(message)})
 
 	ts := event["@timestamp"].(common.Time)
