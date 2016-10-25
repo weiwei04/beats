@@ -79,10 +79,10 @@ func (p *pandora) sendPoints() error {
 	}
 	for i := 0; i < p.retries; i++ {
 		if err := p.client.PostData(points); err != nil {
-			logp.Err("post data failed at try %d, err[%s]", err)
+			logp.Err("post data failed at try %d, err[%s]", i, err)
 		} else {
 			logp.Info("published %d points", len(p.pointBuf))
-			p.pointBuf = p.pointBuf[:0]
+			break
 		}
 	}
 	p.pointBuf = p.pointBuf[:0]
