@@ -29,7 +29,7 @@ metricbeat.modules:
     - filesystem
 
     # File system summary stats
-    #- fsstat
+    - fsstat
 
     # Memory stats
     - memory
@@ -39,6 +39,9 @@ metricbeat.modules:
 
     # Per process stats
     - process
+
+    # Sockets (linux only)
+    #- socket
   enabled: true
   period: 10s
   processes: ['.*']

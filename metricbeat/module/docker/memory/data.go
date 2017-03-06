@@ -14,7 +14,6 @@ func eventsMapping(memoryDataList []MemoryData) []common.MapStr {
 }
 
 func eventMapping(memoryData *MemoryData) common.MapStr {
-
 	event := common.MapStr{
 		mb.ModuleData: common.MapStr{
 			"container": memoryData.Container.ToMapStr(),
@@ -25,11 +24,11 @@ func eventMapping(memoryData *MemoryData) common.MapStr {
 		"limit": memoryData.Limit,
 		"rss": common.MapStr{
 			"total": memoryData.TotalRss,
-			"pct":   memoryData.TotalRss_p,
+			"pct":   memoryData.TotalRssP,
 		},
 		"usage": common.MapStr{
 			"total": memoryData.Usage,
-			"pct":   memoryData.Usage_p,
+			"pct":   memoryData.UsageP,
 			"max":   memoryData.MaxUsage,
 		},
 	}

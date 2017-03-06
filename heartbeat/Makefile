@@ -1,5 +1,5 @@
-BEATNAME=heartbeat
-BEAT_DESCRIPTION?=Ping remote services for availablity and log results to Elasticsearch or send to Logstash.
+BEAT_NAME=heartbeat
+BEAT_DESCRIPTION?=Ping remote services for availability and log results to Elasticsearch or send to Logstash.
 SYSTEM_TESTS=false
 TEST_ENVIRONMENT=false
 
@@ -9,3 +9,7 @@ TEST_ENVIRONMENT=false
 # This is called by the beats packer before building starts
 .PHONY: before-build
 before-build:
+
+# Collects all dependencies and then calls update
+.PHONY: collect
+collect:

@@ -3,7 +3,6 @@ package publisher
 import (
 	"errors"
 	"flag"
-	"os"
 	"sync/atomic"
 	"time"
 
@@ -20,7 +19,12 @@ import (
 	_ "github.com/elastic/beats/libbeat/outputs/fileout"
 	_ "github.com/elastic/beats/libbeat/outputs/kafka"
 	_ "github.com/elastic/beats/libbeat/outputs/logstash"
+	_ "github.com/elastic/beats/libbeat/outputs/pandora"
 	_ "github.com/elastic/beats/libbeat/outputs/redis"
+
+	// load support output codec
+	_ "github.com/elastic/beats/libbeat/outputs/codecs/format"
+	_ "github.com/elastic/beats/libbeat/outputs/codecs/json"
 )
 
 // command line flags
@@ -55,7 +59,7 @@ type BeatPublisher struct {
 	hostname       string // Host name as returned by the operation system
 	name           string // The shipperName if configured, the hostname otherwise
 	version        string
-	IpAddrs        []string
+	IPAddrs        []string
 	disabled       bool
 	Index          string
 	Output         []*outputWorker
@@ -87,7 +91,7 @@ type ShipperConfig struct {
 	common.EventMetadata `config:",inline"` // Fields and tags to add to each event.
 	Name                 string             `config:"name"`
 	RefreshTopologyFreq  time.Duration      `config:"refresh_topology_freq"`
-	Topology_expire      int                `config:"topology_expire"`
+	TopologyExpire       int                `config:"topology_expire"`
 	Geoip                common.Geoip       `config:"geoip"`
 
 	// internal publisher queue sizes
@@ -98,7 +102,7 @@ type ShipperConfig struct {
 
 type Topology struct {
 	Name string `json:"name"`
-	Ip   string `json:"ip"`
+	IP   string `json:"ip"`
 }
 
 const (
@@ -111,7 +115,7 @@ func init() {
 }
 
 func (publisher *BeatPublisher) IsPublisherIP(ip string) bool {
-	for _, myip := range publisher.IpAddrs {
+	for _, myip := range publisher.IPAddrs {
 		if myip == ip {
 			return true
 		}
@@ -160,7 +164,7 @@ func (publisher *BeatPublisher) PublishTopology(params ...string) error {
 
 	localAddrs := params
 	if len(params) == 0 {
-		addrs, err := common.LocalIpAddrsAsStrings(false)
+		addrs, err := common.LocalIPAddrsAsStrings(false)
 		if err != nil {
 			logp.Err("Getting local IP addresses fails with: %s", err)
 			return err
@@ -182,15 +186,14 @@ func (publisher *BeatPublisher) PublishTopology(params ...string) error {
 
 // Create new PublisherType
 func New(
-	beatName string,
-	beatVersion string,
+	beat common.BeatInfo,
 	configs map[string]*common.Config,
 	shipper ShipperConfig,
 	processors *processors.Processors,
 ) (*BeatPublisher, error) {
 
 	publisher := BeatPublisher{}
-	err := publisher.init(beatName, beatVersion, configs, shipper, processors)
+	err := publisher.init(beat, configs, shipper, processors)
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +201,7 @@ func New(
 }
 
 func (publisher *BeatPublisher) init(
-	beatName string,
-	beatVersion string,
+	beat common.BeatInfo,
 	configs map[string]*common.Config,
 	shipper ShipperConfig,
 	processors *processors.Processors,
@@ -220,7 +222,8 @@ func (publisher *BeatPublisher) init(
 	publisher.wsOutput.Init()
 
 	if !publisher.disabled {
-		plugins, err := outputs.InitOutputs(beatName, configs, shipper.Topology_expire)
+		plugins, err := outputs.InitOutputs(beat, configs, shipper.TopologyExpire)
+
 		if err != nil {
 			return err
 		}
@@ -278,8 +281,8 @@ func (publisher *BeatPublisher) init(
 	}
 
 	publisher.shipperName = shipper.Name
-	publisher.hostname, err = os.Hostname()
-	publisher.version = beatVersion
+	publisher.hostname = beat.Hostname
+	publisher.version = beat.Version
 	if err != nil {
 		return err
 	}
@@ -293,7 +296,7 @@ func (publisher *BeatPublisher) init(
 	publisher.globalEventMetadata = shipper.EventMetadata
 
 	//Store the publisher's IP addresses
-	publisher.IpAddrs, err = common.LocalIpAddrsAsStrings(false)
+	publisher.IPAddrs, err = common.LocalIPAddrsAsStrings(false)
 	if err != nil {
 		logp.Err("Failed to get local IP addresses: %s", err)
 		return err
