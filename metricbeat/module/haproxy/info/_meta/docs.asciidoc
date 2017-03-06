@@ -1,3 +1,3 @@
-=== haproxy stat MetricSet
+=== HAProxy Info Metricset
 
-This is the info metricset of the module haproxy.
+The HAProxy `info` metricset collects general information about HAProxy processes. 

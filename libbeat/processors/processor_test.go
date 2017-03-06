@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/beats/libbeat/logp"
 	"github.com/elastic/beats/libbeat/processors"
 	_ "github.com/elastic/beats/libbeat/processors/actions"
+	_ "github.com/elastic/beats/libbeat/processors/add_cloud_metadata"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,7 +42,7 @@ func TestBadConfig(t *testing.T) {
 	}
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"include_fields": map[string]interface{}{
 				"when": map[string]interface{}{
 					"contains": map[string]string{
@@ -82,7 +83,7 @@ func TestIncludeFields(t *testing.T) {
 	}
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"include_fields": map[string]interface{}{
 				"when": map[string]interface{}{
 					"contains": map[string]string{
@@ -116,7 +117,7 @@ func TestIncludeFields(t *testing.T) {
 				"rss":   11194368,
 				"rss_p": 0,
 				"share": 0,
-				"size":  2555572224,
+				"size":  int64(2555572224),
 			},
 		},
 		"type": "process",
@@ -134,7 +135,7 @@ func TestIncludeFields(t *testing.T) {
 				"rss":   11194368,
 				"rss_p": 0,
 				"share": 0,
-				"size":  2555572224,
+				"size":  int64(2555572224),
 			},
 		},
 		"type": "process",
@@ -150,7 +151,7 @@ func TestIncludeFields1(t *testing.T) {
 	}
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"include_fields": map[string]interface{}{
 				"when": map[string]interface{}{
 					"regexp": map[string]string{
@@ -184,7 +185,7 @@ func TestIncludeFields1(t *testing.T) {
 				"rss":   11194368,
 				"rss_p": 0,
 				"share": 0,
-				"size":  2555572224,
+				"size":  int64(2555572224),
 			},
 		},
 		"type": "process",
@@ -203,7 +204,7 @@ func TestIncludeFields1(t *testing.T) {
 func TestDropFields(t *testing.T) {
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"drop_fields": map[string]interface{}{
 				"when": map[string]interface{}{
 					"equals": map[string]string{
@@ -238,7 +239,7 @@ func TestDropFields(t *testing.T) {
 			"rss":   11194368,
 			"rss_p": 0,
 			"share": 0,
-			"size":  2555572224,
+			"size":  int64(2555572224),
 		},
 		"type": "process",
 	}
@@ -268,7 +269,7 @@ func TestMultipleIncludeFields(t *testing.T) {
 	}
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"include_fields": map[string]interface{}{
 				"when": map[string]interface{}{
 					"contains": map[string]string{
@@ -278,7 +279,7 @@ func TestMultipleIncludeFields(t *testing.T) {
 				"fields": []string{"proc"},
 			},
 		},
-		map[string]interface{}{
+		{
 			"include_fields": map[string]interface{}{
 				"fields": []string{"proc.cpu.start_time", "proc.cpu.total_p", "proc.mem.rss_p", "proc.cmdline"},
 			},
@@ -308,7 +309,7 @@ func TestMultipleIncludeFields(t *testing.T) {
 			"rss":   11194368,
 			"rss_p": 0,
 			"share": 0,
-			"size":  2555572224,
+			"size":  int64(2555572224),
 		},
 		"type": "process",
 	}
@@ -365,7 +366,7 @@ func TestDropEvent(t *testing.T) {
 	}
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"drop_event": map[string]interface{}{
 				"when": map[string]interface{}{
 					"range": map[string]interface{}{
@@ -400,7 +401,7 @@ func TestDropEvent(t *testing.T) {
 				"rss":   11194368,
 				"rss_p": 0,
 				"share": 0,
-				"size":  2555572224,
+				"size":  int64(2555572224),
 			},
 		},
 		"type": "process",
@@ -418,7 +419,7 @@ func TestEmptyCondition(t *testing.T) {
 	}
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"drop_event": map[string]interface{}{},
 		},
 	}
@@ -445,7 +446,7 @@ func TestEmptyCondition(t *testing.T) {
 				"rss":   11194368,
 				"rss_p": 0,
 				"share": 0,
-				"size":  2555572224,
+				"size":  int64(2555572224),
 			},
 		},
 		"type": "process",
@@ -463,7 +464,7 @@ func TestBadCondition(t *testing.T) {
 	}
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"drop_event": map[string]interface{}{
 				"when": map[string]interface{}{
 					"equal": map[string]string{
@@ -502,7 +503,7 @@ func TestMissingFields(t *testing.T) {
 	}
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"include_fields": map[string]interface{}{
 				"when": map[string]interface{}{
 					"equals": map[string]string{
@@ -539,7 +540,7 @@ func TestBadConditionConfig(t *testing.T) {
 	}
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"include_fields": map[string]interface{}{
 				"when": map[string]interface{}{
 					"fake": map[string]string{
@@ -573,7 +574,7 @@ func TestBadConditionConfig(t *testing.T) {
 func TestDropMissingFields(t *testing.T) {
 
 	yml := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"drop_fields": map[string]interface{}{
 				"fields": []string{"foo.bar", "proc.cpu", "proc.sss", "beat", "mem"},
 			},
@@ -603,7 +604,7 @@ func TestDropMissingFields(t *testing.T) {
 			"rss":   11194368,
 			"rss_p": 0,
 			"share": 0,
-			"size":  2555572224,
+			"size":  int64(2555572224),
 		},
 		"type": "process",
 	}

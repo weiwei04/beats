@@ -12,23 +12,24 @@ type Config struct {
 	Interfaces     InterfacesConfig          `config:"interfaces"`
 	Flows          *Flows                    `config:"flows"`
 	Protocols      map[string]*common.Config `config:"protocols"`
+	ProtocolsList  []*common.Config          `config:"protocols"`
 	Procs          procs.ProcsConfig         `config:"procs"`
 	IgnoreOutgoing bool                      `config:"ignore_outgoing"`
 	RunOptions     droppriv.RunOptions
 }
 
 type InterfacesConfig struct {
-	Device         string
-	Type           string
-	File           string
-	With_vlans     bool
-	Bpf_filter     string
-	Snaplen        int
-	Buffer_size_mb int
-	TopSpeed       bool
-	Dumpfile       string
-	OneAtATime     bool
-	Loop           int
+	Device       string
+	Type         string
+	File         string
+	WithVlans    bool
+	BpfFilter    string
+	Snaplen      int
+	BufferSizeMb int
+	TopSpeed     bool
+	Dumpfile     string
+	OneAtATime   bool
+	Loop         int
 }
 
 type Flows struct {

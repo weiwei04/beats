@@ -4,46 +4,18 @@ import yaml
 
 # Collects config for all modules
 
-header_full = """########################## Metricbeat Configuration ###########################
 
-# This file is a full configuration example documenting all non-deprecated
-# options in comments. For a shorter configuration example, that contains only
-# the most common options, please see metricbeat.yml in the same directory.
-#
-# You can find the full configuration reference here:
-# https://www.elastic.co/guide/en/beats/metricbeat/index.html
-
-#==========================  Modules configuration ============================
-metricbeat.modules:
-
-"""
-
-header_short = """###################### Metricbeat Configuration Example #######################
-
-# This file is an example configuration file highlighting only the most common
-# options. The metricbeat.full.yml file from the same directory contains all the
-# supported options with more comments. You can use it as a reference.
-#
-# You can find the full configuration reference here:
-# https://www.elastic.co/guide/en/beats/metricbeat/index.html
-
-#==========================  Modules configuration ============================
-metricbeat.modules:
-
-"""
-
-
-def collect(beat_path, full=False):
+def collect(beat_name, beat_path, full=False):
 
     base_dir = beat_path + "/module"
     path = os.path.abspath(base_dir)
 
     # yml file
 
-    if full:
-        config_yml = header_full
-    else:
-        config_yml = header_short
+    config_yml = "\n#==========================  Modules configuration ============================\n"
+    config_yml += beat_name + """.modules:
+
+"""
 
     # Read the modules list but put "system" first
     modules = ["system"]
@@ -92,7 +64,7 @@ def collect(beat_path, full=False):
 
         config_yml += "\n"
     # output string so it can be concatenated
-    print config_yml
+    print(config_yml)
 
 
 # Makes sure every title line is 79 + newline chars long
@@ -111,10 +83,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Collects modules config")
     parser.add_argument("path", help="Path to the beat folder")
+    parser.add_argument("--beat", help="Beat name")
     parser.add_argument("--full", action="store_true",
                         help="Collect the full versions")
 
     args = parser.parse_args()
+    beat_name = args.beat
     beat_path = args.path
 
-    collect(beat_path, args.full)
+    collect(beat_name, beat_path, args.full)

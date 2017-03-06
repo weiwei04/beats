@@ -12,9 +12,9 @@
 *`-E <setting>=<value>`*::
 Overwrite an individual setting in the config file. For example:
 +
-["source","sh"]
+["source","sh",subs="attributes"]
 ----------------------------------------------------------------------
-sudo ./packetbeat -c packetbeat.yml -E name=mybeat
+sudo ./{beatname_lc} -c {beatname_lc}.yml -E name=mybeat
 ----------------------------------------------------------------------
 
 *`-N`*::
@@ -59,6 +59,10 @@ Set the default location for miscellaneous files. See the <<directory-layout>> s
 
 *`-path.logs`*::
 Set the default location for log files. See the <<directory-layout>> section for details.
+
+*`-setup`*::
+Load the sample Kibana dashboards. By default, this downloads an archive file containing the Beats dashboards
+from the elastic.co website. See the <<configuration-dashboards>> section for more details and more options.
 
 *`-v`*::
 Enable verbose output to show INFO-level messages.

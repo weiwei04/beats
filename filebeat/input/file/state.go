@@ -27,7 +27,7 @@ func NewState(fileInfo os.FileInfo, path string) State {
 		Finished:    false,
 		FileStateOS: GetOSState(fileInfo),
 		Timestamp:   time.Now(),
-		TTL:         -1 * time.Second, // By default, state does have an infinit ttl
+		TTL:         -1, // By default, state does have an infinite ttl
 	}
 }
 
@@ -39,7 +39,7 @@ func (s *State) IsEmpty() bool {
 // States handles list of FileState
 type States struct {
 	states []State
-	mutex  sync.Mutex
+	sync.Mutex
 }
 
 func NewStates() *States {
@@ -50,8 +50,8 @@ func NewStates() *States {
 
 // Update updates a state. If previous state didn't exist, new one is created
 func (s *States) Update(newState State) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	index, _ := s.findPrevious(newState)
 	newState.Timestamp = time.Now()
@@ -67,8 +67,8 @@ func (s *States) Update(newState State) {
 
 func (s *States) FindPrevious(newState State) State {
 	// TODO: This currently blocks writing updates every time state is fetched. Should be improved for performance
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.Lock()
+	defer s.Unlock()
 	_, state := s.findPrevious(newState)
 	return state
 }
@@ -92,8 +92,8 @@ func (s *States) findPrevious(newState State) (int, State) {
 // The number of states that were cleaned up is returned
 func (s *States) Cleanup() int {
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	statesBefore := len(s.states)
 
@@ -102,11 +102,11 @@ func (s *States) Cleanup() int {
 
 	for _, state := range s.states {
 
-		ttl := state.TTL
+		expired := (state.TTL > 0 && currentTime.Sub(state.Timestamp) > state.TTL)
 
-		if ttl == 0 || (ttl > 0 && currentTime.Sub(state.Timestamp) > ttl) {
+		if state.TTL == 0 || expired {
 			if state.Finished {
-				logp.Debug("state", "State removed for %v because of older: %v", state.Source, ttl)
+				logp.Debug("state", "State removed for %v because of older: %v", state.Source, state.TTL)
 				continue // drop state
 			} else {
 				logp.Err("State for %s should have been dropped, but couldn't as state is not finished.", state.Source)
@@ -152,16 +152,16 @@ func (s *States) CleanupWithFunc(fn func(state State)) int {
 
 // Count returns number of states
 func (s *States) Count() int {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	return len(s.states)
 }
 
 // Returns a copy of the file states
 func (s *States) GetStates() []State {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	newStates := make([]State, len(s.states))
 	copy(newStates, s.states)
@@ -171,8 +171,8 @@ func (s *States) GetStates() []State {
 
 // SetStates overwrites all internal states with the given states array
 func (s *States) SetStates(states []State) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.Lock()
+	defer s.Unlock()
 	s.states = states
 }
 

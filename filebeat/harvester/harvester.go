@@ -1,22 +1,24 @@
-/*
-  The harvester package harvest different inputs for new information. Currently
-  two harvester types exist:
-
-   * log
-   * stdin
-
-  The log harvester reads a file line by line. In case the end of a file is found
-  with an incomplete line, the line pointer stays at the beginning of the incomplete
-  line. As soon as the line is completed, it is read and returned.
-
-  The stdin harvesters reads data from stdin.
-*/
+// Package harvester harvests different inputs for new information. Currently
+// two harvester types exist:
+//
+//   * log
+//   * stdin
+//
+//  The log harvester reads a file line by line. In case the end of a file is found
+//  with an incomplete line, the line pointer stays at the beginning of the incomplete
+//  line. As soon as the line is completed, it is read and returned.
+//
+//  The stdin harvesters reads data from stdin.
 package harvester
 
 import (
 	"errors"
 	"fmt"
+	"sync"
 
+	"github.com/satori/go.uuid"
+
+	"github.com/elastic/beats/filebeat/channel"
 	"github.com/elastic/beats/filebeat/config"
 	"github.com/elastic/beats/filebeat/harvester/encoding"
 	"github.com/elastic/beats/filebeat/harvester/source"
@@ -42,20 +44,25 @@ type Harvester struct {
 	encodingFactory encoding.EncodingFactory
 	encoding        encoding.Encoding
 	done            chan struct{}
+	stopOnce        sync.Once
+	stopWg          *sync.WaitGroup
+	outlet          *channel.Outlet
+	ID              uuid.UUID
 }
 
 func NewHarvester(
 	cfg *common.Config,
 	state file.State,
-	prospectorChan chan *input.Event,
-	done chan struct{},
+	outlet *channel.Outlet,
 ) (*Harvester, error) {
 
 	h := &Harvester{
-		config:         defaultConfig,
-		state:          state,
-		prospectorChan: prospectorChan,
-		done:           done,
+		config: defaultConfig,
+		state:  state,
+		done:   make(chan struct{}),
+		stopWg: &sync.WaitGroup{},
+		outlet: outlet,
+		ID:     uuid.NewV4(),
 	}
 
 	if err := cfg.Unpack(&h.config); err != nil {
@@ -67,6 +74,9 @@ func NewHarvester(
 		return nil, fmt.Errorf("unknown encoding('%v')", h.config.Encoding)
 	}
 	h.encodingFactory = encodingFactory
+
+	// Add outlet signal so harvester can also stop itself
+	h.outlet.SetSignal(h.done)
 
 	return h, nil
 }

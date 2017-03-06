@@ -1,6 +1,6 @@
 
 ////
-This file is generated! See etc/fields.yml and scripts/generate_field_docs.py
+This file is generated! See _meta/fields.yml and scripts/generate_field_docs.py
 ////
 
 [[exported-fields]]
@@ -229,7 +229,7 @@ Acknowledge multiple messages.
 [float]
 === amqp.arguments
 
-type: dict
+type: object
 
 Optional additional arguments passed to some methods. Can be of various types.
 
@@ -271,7 +271,7 @@ MIME content encoding.
 [float]
 === amqp.headers
 
-type: dict
+type: object
 
 Message header field table.
 
@@ -404,7 +404,7 @@ Arbitrary tags that can be set per Beat and per transaction type.
 [float]
 === fields
 
-type: dict
+type: object
 
 Contains user configurable fields.
 
@@ -770,7 +770,7 @@ The paging_state is a bytes value that should be used in QUERY/EXECUTE to contin
 [float]
 === cassandra.response.supported
 
-type: dict
+type: object
 
 Indicates which startup options are supported by the server. This message comes as a response to an OPTIONS message.
 
@@ -822,9 +822,9 @@ type: keyword
 Representing the node ip.
 
 [float]
-=== cassandra.response.event.host
+=== cassandra.response.event.port
 
-type: keyword
+type: long
 
 Representing the node port.
 
@@ -1121,7 +1121,23 @@ type: geo_point
 
 example: 40.715, -74.011
 
-The GeoIP location of the `real_ip` IP address or of the `client_ip` address if the `real_ip` is disabled. The field is a string containing the latitude and longitude separated by a comma.
+DEPRECATED. Please use `client_geoip` instead. The GeoIP location of the `real_ip` IP address or of the `client_ip` address if the `real_ip` is disabled. The field is a string containing the latitude and longitude separated by a comma.
+
+
+[float]
+== client_geoip Fields
+
+The GeoIP information of the client.
+
+
+[float]
+=== client_geoip.location
+
+type: geo_point
+
+example: {'lat': 51, 'lon': 9}
+
+The GeoIP location of the `client_ip` address. This field is available only if you define a https://www.elastic.co/guide/en/elasticsearch/plugins/master/using-ingest-geoip.html[GeoIP Processor] as a pipeline in the https://www.elastic.co/guide/en/elasticsearch/plugins/master/ingest-geoip.html[Ingest GeoIP processor plugin] or using Logstash.
 
 
 [float]
@@ -1138,6 +1154,14 @@ The layer 4 port of the process that initiated the transaction.
 example: udp
 
 The transport protocol used for the transaction. If not specified, then tcp is assumed.
+
+
+[float]
+=== type
+
+required: True
+
+The type of the transaction (for example, HTTP, MySQL, Redis, or RUM) or "flow" in case of flows.
 
 
 [float]
@@ -1274,6 +1298,14 @@ example: amazon.co.uk.
 The effective top-level domain (eTLD) plus one more label. For example, the eTLD+1 for "foo.bar.golang.org." is "golang.org.". The data for determining the eTLD comes from an embedded copy of the data from http://publicsuffix.org.
 
 [float]
+=== dns.answers
+
+type: object
+
+An array containing a dictionary about each answer section returned by the server.
+
+
+[float]
 === dns.answers_count
 
 type: long
@@ -1319,7 +1351,7 @@ The data describing the resource. The meaning of this data depends on the type a
 [float]
 === dns.authorities
 
-type: dict
+type: object
 
 An array containing a dictionary for each authority section from the answer.
 
@@ -1354,31 +1386,9 @@ example: IN
 The class of DNS data contained in this resource record.
 
 [float]
-=== dns.answers
-
-type: dict
-
-An array containing a dictionary about each answer section returned by the server.
-
-
-[float]
-=== dns.answers.ttl
-
-type: long
-
-The time interval in seconds that this resource record may be cached before it should be discarded. Zero values mean that the data should not be cached.
-
-
-[float]
-=== dns.answers.data
-
-The data describing the resource. The meaning of this data depends on the type and class of the resource record.
-
-
-[float]
 === dns.additionals
 
-type: dict
+type: object
 
 An array containing a dictionary for each additional section from the answer.
 
@@ -1462,20 +1472,6 @@ These fields contain data about the flow itself.
 
 
 [float]
-=== @timestamp
-
-type: date
-
-example: 2015-01-24 14:06:05.071000
-
-format: YYYY-MM-DDTHH:MM:SS.milliZ
-
-required: True
-
-The timestamp of the event, as measured by the Beat. The precision is in milliseconds. The timezone is UTC.
-
-
-[float]
 === start_time
 
 type: date
@@ -1501,14 +1497,6 @@ format: YYYY-MM-DDTHH:MM:SS.milliZ
 required: True
 
 The time, the most recent processed packet for the flow has been seen.
-
-
-[float]
-=== type
-
-required: True
-
-Indicates the event to be a flow event. This field is always set to "flow".
 
 
 [float]
@@ -1754,12 +1742,6 @@ ICMP id used in ICMP based flow.
 
 
 [float]
-=== transport
-
-The transport protocol used by the flow. If known, one of "udp" or "tcp".
-
-
-[float]
 === connection_id
 
 optional TCP connection id
@@ -1792,7 +1774,7 @@ The query parameters or form values. The query parameters are available in the R
 [float]
 === http.request.headers
 
-type: dict
+type: object
 
 A map containing the captured header fields from the request. Which headers to capture is configurable. If headers with the same header name are present in the message, they will be separated by commas.
 
@@ -1827,7 +1809,7 @@ The HTTP status phrase.
 [float]
 === http.response.headers
 
-type: dict
+type: object
 
 A map containing the captured header fields from the response. Which headers to capture is configurable. If headers with the same header name are present in the message, they will be separated by commas.
 
@@ -2030,7 +2012,7 @@ The status code value returned in the response (binary protocol only).
 [float]
 === memcache.request.keys
 
-type: list
+type: array
 
 The list of keys sent in the store or load commands.
 
@@ -2038,7 +2020,7 @@ The list of keys sent in the store or load commands.
 [float]
 === memcache.response.keys
 
-type: list
+type: array
 
 The list of keys returned for the load command (if present).
 
@@ -2062,7 +2044,7 @@ The number of values found in the memcache response message. If the command does
 [float]
 === memcache.request.values
 
-type: list
+type: array
 
 The list of base64 encoded values sent with the request (if present).
 
@@ -2070,7 +2052,7 @@ The list of base64 encoded values sent with the request (if present).
 [float]
 === memcache.response.values
 
-type: list
+type: array
 
 The list of base64 encoded values sent with the response (if present).
 
@@ -2082,7 +2064,7 @@ type: long
 
 format: bytes
 
-The byte count of the values being transfered.
+The byte count of the values being transferred.
 
 
 [float]
@@ -2092,7 +2074,7 @@ type: long
 
 format: bytes
 
-The byte count of the values being transfered.
+The byte count of the values being transferred.
 
 
 [float]
@@ -2226,7 +2208,7 @@ The CAS (compare-and-swap) identifier to be used with CAS-based updates (if pres
 [float]
 === memcache.response.stats
 
-type: list
+type: array
 
 The list of statistic values returned. Each entry is a dictionary with the fields "name" and "value".
 
@@ -2626,28 +2608,6 @@ If the call resulted in exceptions, this field contains the exceptions in a huma
 
 These fields contain data about the transaction itself.
 
-
-
-[float]
-=== @timestamp
-
-type: date
-
-example: 2015-01-24 14:06:05.071000
-
-format: YYYY-MM-DDTHH:MM:SS.milliZ
-
-required: True
-
-The timestamp of the event, as measured either by the Beat or by a common collector point. The precision is in milliseconds. The timezone is UTC.
-
-
-[float]
-=== type
-
-required: True
-
-The type of the transaction (for example, HTTP, MySQL, Redis, or RUM).
 
 
 [float]

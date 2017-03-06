@@ -11,7 +11,7 @@ import (
 	"time"
 
 	cfg "github.com/elastic/beats/filebeat/config"
-	. "github.com/elastic/beats/filebeat/input"
+	"github.com/elastic/beats/filebeat/input"
 	"github.com/elastic/beats/filebeat/input/file"
 	"github.com/elastic/beats/filebeat/publisher"
 	"github.com/elastic/beats/libbeat/logp"
@@ -19,7 +19,7 @@ import (
 )
 
 type Registrar struct {
-	Channel      chan []*Event
+	Channel      chan []*input.Event
 	out          publisher.SuccessLogger
 	done         chan struct{}
 	registryFile string       // Path to the Registry File
@@ -30,7 +30,7 @@ type Registrar struct {
 var (
 	statesUpdate   = expvar.NewInt("registrar.states.update")
 	statesCleanup  = expvar.NewInt("registrar.states.cleanup")
-	statesCurrent  = expvar.NewInt("registar.states.current")
+	statesCurrent  = expvar.NewInt("registrar.states.current")
 	registryWrites = expvar.NewInt("registrar.writes")
 )
 
@@ -40,7 +40,7 @@ func New(registryFile string, out publisher.SuccessLogger) (*Registrar, error) {
 		registryFile: registryFile,
 		done:         make(chan struct{}),
 		states:       file.NewStates(),
-		Channel:      make(chan []*Event, 1),
+		Channel:      make(chan []*input.Event, 1),
 		out:          out,
 		wg:           sync.WaitGroup{},
 	}
@@ -57,7 +57,7 @@ func (r *Registrar) Init() error {
 
 	// Create directory if it does not already exist.
 	registryPath := filepath.Dir(r.registryFile)
-	err := os.MkdirAll(registryPath, 0755)
+	err := os.MkdirAll(registryPath, 0750)
 	if err != nil {
 		return fmt.Errorf("Failed to created registry file dir %s: %v", registryPath, err)
 	}
@@ -78,9 +78,8 @@ func (r *Registrar) Init() error {
 		// Special error message for directory
 		if fileInfo.IsDir() {
 			return fmt.Errorf("Registry file path must be a file. %s is a directory.", r.registryFile)
-		} else {
-			return fmt.Errorf("Registry file path is not a regular file: %s", r.registryFile)
 		}
+		return fmt.Errorf("Registry file path is not a regular file: %s", r.registryFile)
 	}
 
 	logp.Info("Registry file set to: %s", r.registryFile)
@@ -89,8 +88,8 @@ func (r *Registrar) Init() error {
 }
 
 // GetStates return the registrar states
-func (r *Registrar) GetStates() file.States {
-	return *r.states
+func (r *Registrar) GetStates() []file.State {
+	return r.states.GetStates()
 }
 
 // loadStates fetches the previous reading state from the configure RegistryFile file
@@ -119,6 +118,7 @@ func (r *Registrar) loadStates() error {
 		return fmt.Errorf("Error decoding states: %s", err)
 	}
 
+	states = resetStates(states)
 	r.states.SetStates(states)
 	logp.Info("States Loaded from registrar: %+v", len(states))
 
@@ -142,7 +142,17 @@ func (r *Registrar) loadAndConvertOldState(f *os.File) bool {
 		return false
 	}
 
+	// Check if already new state format
 	decoder := json.NewDecoder(f)
+	newState := []file.State{}
+	err = decoder.Decode(&newState)
+	// No error means registry is already in new format
+	if err == nil {
+		return false
+	}
+
+	// Reset file offset
+	f.Seek(0, 0)
 	oldStates := map[string]file.State{}
 	err = decoder.Decode(&oldStates)
 	if err != nil {
@@ -158,6 +168,7 @@ func (r *Registrar) loadAndConvertOldState(f *os.File) bool {
 	// Convert old states to new states
 	logp.Info("Old registry states found: %v", len(oldStates))
 	states := convertOldStates(oldStates)
+	states = resetStates(states)
 	r.states.SetStates(states)
 
 	// Rewrite registry in new format
@@ -166,6 +177,19 @@ func (r *Registrar) loadAndConvertOldState(f *os.File) bool {
 	logp.Info("Old states converted to new states and written to registrar: %v", len(oldStates))
 
 	return true
+}
+
+// resetStates sets all states to finished and disable TTL on restart
+// For all states covered by a prospector, TTL will be overwritten with the prospector value
+func resetStates(states []file.State) []file.State {
+
+	for key, state := range states {
+		state.Finished = true
+		// Set ttl to -2 to easily spot which states are not managed by a prospector
+		state.TTL = -2
+		states[key] = state
+	}
+	return states
 }
 
 func convertOldStates(oldStates map[string]file.State) []file.State {
@@ -222,7 +246,7 @@ func (r *Registrar) Run() {
 	}()
 
 	for {
-		var events []*Event
+		var events []*input.Event
 
 		select {
 		case <-r.done:
@@ -238,7 +262,7 @@ func (r *Registrar) Run() {
 		statesCleanup.Add(int64(cleanedStates))
 
 		logp.Debug("registrar",
-			"Registrar states cleaned up. Before: %d , After: %d",
+			"Registrar states cleaned up. Before: %d, After: %d",
 			beforeCount, beforeCount-cleanedStates)
 
 		if err := r.writeRegistry(); err != nil {
@@ -253,7 +277,7 @@ func (r *Registrar) Run() {
 }
 
 // processEventStates gets the states from the events and writes them to the registrar state
-func (r *Registrar) processEventStates(events []*Event) {
+func (r *Registrar) processEventStates(events []*input.Event) {
 	logp.Debug("registrar", "Processing %d events", len(events))
 
 	// Take the last event found for each file source
@@ -281,7 +305,7 @@ func (r *Registrar) writeRegistry() error {
 	logp.Debug("registrar", "Write registry file: %s", r.registryFile)
 
 	tempfile := r.registryFile + ".new"
-	f, err := os.Create(tempfile)
+	f, err := os.OpenFile(tempfile, os.O_RDWR|os.O_CREATE|os.O_TRUNC|os.O_SYNC, 0600)
 	if err != nil {
 		logp.Err("Failed to create tempfile (%s) for writing: %s", tempfile, err)
 		return err
