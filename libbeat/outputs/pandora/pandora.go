@@ -26,7 +26,8 @@ type pandora struct {
 	retries  int
 }
 
-func New(beatName string, cfg *common.Config, _ int) (outputs.Outputer, error) {
+//func New(beatName string, cfg *common.Config, _ int) (outputs.Outputer, error) {
+func New(beatInfo common.BeatInfo, cfg *common.Config, _ int) (outputs.Outputer, error) {
 	config := defaultConfig
 	err := cfg.Unpack(&config)
 	if err != nil {
