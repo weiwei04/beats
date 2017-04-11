@@ -323,22 +323,24 @@ func (p *ProspectorLog) harvestExistingFile(newState file.State, oldState file.S
 func (p *ProspectorLog) handleIgnoreOlder(lastState, newState file.State) error {
 	logp.Debug("prospector", "Ignore file because ignore_older reached: %s(%d)", newState.Source, newState.FileStateOS.Inode)
 
-	if !lastState.IsEmpty() { // lastState 不为空的话
-		if !lastState.Finished { // lastState 没有finish的话
-			// 我觉得要更新state 为finish=true
-			logp.Info("File is falling under ignore_older before harvesting is finished. Adjust your close_* settings: %s(%d)", newState.Source, newState.FileStateOS.Inode)
+	// 当该文件被删除的时候lastState为空
+	if !lastState.IsEmpty() {
+		// lastState 不为空的话
+		if p.isCleanInactive(newState) {
+			logp.Debug("prospector", "Do not write state for ignore_older because clean_inactive reached")
+		} else {
+			if !lastState.Finished {
+				logp.Info("File is falling under ignore_older before harvesting is finished. Adjust your close_* settings: %s(%d)", newState.Source, newState.FileStateOS.Inode)
+			}
+			// Old state exist, no need to update it
+			return nil
 		}
-		// Old state exist, no need to update it
-		return nil
 	}
-
 	// Make sure file is not falling under clean_inactive yet
-	if p.isCleanInactive(newState) {
-		logp.Debug("prospector", "Do not write state for ignore_older because clean_inactive reached")
-		return nil
-	}
-
-	// 接下来手动设为读完的
+	//if p.isCleanInactive(newState) {
+	//	logp.Debug("prospector", "Do not write state for ignore_older because clean_inactive reached")
+	//	return nil
+	//}
 
 	// Set offset to end of file to be consistent with files which were harvested before
 	// See https://github.com/elastic/beats/pull/2907
