@@ -107,9 +107,9 @@ func (p *ProspectorLog) Run() {
 					if err != nil {
 						logp.Err("File cleanup state update error: %s", err)
 					}
-					logp.Debug("prospector", "Remove state for file as file removed: %s", state.Source)
+					logp.Debug("prospector", "Remove state for file as file removed: %s, %d", state.Source, state.FileStateOS.Inode)
 				} else {
-					logp.Debug("prospector", "State for file not removed because not finished: %s", state.Source)
+					logp.Debug("prospector", "State for file not removed because not finished: %s, %d", state.Source, state.FileStateOS.Inode)
 				}
 			}
 		}
@@ -244,10 +244,10 @@ func (p *ProspectorLog) scan() {
 
 		// Decides if previous state exists
 		if lastState.IsEmpty() {
-			logp.Debug("prospector", "Start harvester for new file: %s", newState.Source)
+			logp.Debug("prospector", "Start harvester for new file: %s(%d)", newState.Source, newState.FileStateOS.Inode)
 			err := p.Prospector.startHarvester(newState, 0)
 			if err != nil {
-				logp.Err("Harvester could not be started on new file: %s, Err: %s", newState.Source, err)
+				logp.Err("Harvester could not be started on new file: %s, %d, Err: %s", newState.Source, err)
 			}
 		} else {
 			p.harvestExistingFile(newState, lastState)
@@ -277,10 +277,10 @@ func (p *ProspectorLog) harvestExistingFile(newState file.State, oldState file.S
 
 	// File size was reduced -> truncated file
 	if oldState.Finished && newState.Fileinfo.Size() < oldState.Offset {
-		logp.Debug("prospector", "Old file was truncated. Starting from the beginning: %s", newState.Source)
+		logp.Debug("prospector", "Old file was truncated. Starting from the beginning: %s(%d)", newState.Source, newState.FileStateOS.Inode)
 		err := p.Prospector.startHarvester(newState, 0)
 		if err != nil {
-			logp.Err("Harvester could not be started on truncated file: %s, Err: %s", newState.Source, err)
+			logp.Err("Harvester could not be started on truncated file: %s(%d), Err: %s", newState.Source, newState.FileStateOS.Inode, err)
 		}
 
 		filesTruncated.Add(1)
@@ -291,10 +291,12 @@ func (p *ProspectorLog) harvestExistingFile(newState file.State, oldState file.S
 	if oldState.Source != "" && oldState.Source != newState.Source {
 		// This does not start a new harvester as it is assume that the older harvester is still running
 		// or no new lines were detected. It sends only an event status update to make sure the new name is persisted.
-		logp.Debug("prospector", "File rename was detected: %s -> %s, Current offset: %v", oldState.Source, newState.Source, oldState.Offset)
+		logp.Debug("prospector", "File rename was detected: %s(%d) -> %s(d), Current offset: %v",
+			oldState.Source, oldState.FileStateOS.Inode, newState.Source, newState.FileStateOS.Inode, oldState.Offset)
 
 		if oldState.Finished {
-			logp.Debug("prospector", "Updating state for renamed file: %s -> %s, Current offset: %v", oldState.Source, newState.Source, oldState.Offset)
+			logp.Debug("prospector", "Updating state for renamed file: %s(%d) -> %s(%d), Current offset: %v",
+				oldState.Source, oldState.FileStateOS.Inode, newState.Source, newState.FileStateOS.Inode, oldState.Offset)
 			// Update state because of file rotation
 			oldState.Source = newState.Source
 			err := p.Prospector.updateState(input.NewEvent(oldState))
@@ -310,20 +312,21 @@ func (p *ProspectorLog) harvestExistingFile(newState file.State, oldState file.S
 
 	if !oldState.Finished {
 		// Nothing to do. Harvester is still running and file was not renamed
-		logp.Debug("prospector", "Harvester for file is still running: %s", newState.Source)
+		logp.Debug("prospector", "Harvester for file is still running: %s(%d) %d", newState.Source, newState.FileStateOS.Inode, newState.FileStateOS.Inode)
 	} else {
-		logp.Debug("prospector", "File didn't change: %s", newState.Source)
+		logp.Debug("prospector", "File didn't change: %s(%d)", newState.Source, newState.FileStateOS.Inode)
 	}
 }
 
 // handleIgnoreOlder handles states which fall under ignore older
 // Based on the state information it is decided if the state information has to be updated or not
 func (p *ProspectorLog) handleIgnoreOlder(lastState, newState file.State) error {
-	logp.Debug("prospector", "Ignore file because ignore_older reached: %s", newState.Source)
+	logp.Debug("prospector", "Ignore file because ignore_older reached: %s(%d)", newState.Source, newState.FileStateOS.Inode)
 
-	if !lastState.IsEmpty() {
-		if !lastState.Finished {
-			logp.Info("File is falling under ignore_older before harvesting is finished. Adjust your close_* settings: %s", newState.Source)
+	if !lastState.IsEmpty() { // lastState 不为空的话
+		if !lastState.Finished { // lastState 没有finish的话
+			// 我觉得要更新state 为finish=true
+			logp.Info("File is falling under ignore_older before harvesting is finished. Adjust your close_* settings: %s(%d)", newState.Source, newState.FileStateOS.Inode)
 		}
 		// Old state exist, no need to update it
 		return nil
@@ -334,6 +337,8 @@ func (p *ProspectorLog) handleIgnoreOlder(lastState, newState file.State) error 
 		logp.Debug("prospector", "Do not write state for ignore_older because clean_inactive reached")
 		return nil
 	}
+
+	// 接下来手动设为读完的
 
 	// Set offset to end of file to be consistent with files which were harvested before
 	// See https://github.com/elastic/beats/pull/2907

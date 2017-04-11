@@ -77,6 +77,7 @@ func (h *Harvester) Harvest(r reader.Reader) {
 		}
 
 		select {
+		// 线上没有设置close_timeout, 所以case#1不会达到
 		// Applies when timeout is reached
 		case <-closeTimeout:
 			logp.Info("Closing harvester because close_timeout was reached.")
@@ -88,7 +89,7 @@ func (h *Harvester) Harvest(r reader.Reader) {
 		h.fileReader.Close()
 	}()
 
-	logp.Info("Harvester started for file: %s", h.state.Source)
+	logp.Info("Harvester started for file: %s(%d)", h.state.Source,  h.state.FileStateOS.Inode)
 
 	for {
 		select {
@@ -101,21 +102,26 @@ func (h *Harvester) Harvest(r reader.Reader) {
 		if err != nil {
 			switch err {
 			case ErrFileTruncate:
-				logp.Info("File was truncated. Begin reading file from offset 0: %s", h.state.Source)
+				logp.Info("File was truncated. Begin reading file from offset 0: %s(%d)",
+					h.state.Source, h.state.FileStateOS.Inode)
 				h.state.Offset = 0
 				filesTruncated.Add(1)
 			case ErrRemoved:
-				logp.Info("File was removed: %s. Closing because close_removed is enabled.", h.state.Source)
+				logp.Info("File was removed: %s(%d). Closing because close_removed is enabled.",
+					h.state.Source, h.state.FileStateOS.Inode)
 			case ErrRenamed:
-				logp.Info("File was renamed: %s. Closing because close_renamed is enabled.", h.state.Source)
+				logp.Info("File was renamed: %s(%d). Closing because close_renamed is enabled.",
+					h.state.Source, h.state.FileStateOS.Inode)
 			case ErrClosed:
-				logp.Info("Reader was closed: %s. Closing.", h.state.Source)
+				logp.Info("Reader was closed: %s(%d). Closing.", h.state.Source, h.state.FileStateOS.Inode)
 			case io.EOF:
-				logp.Info("End of file reached: %s. Closing because close_eof is enabled.", h.state.Source)
+				logp.Info("End of file reached: %s(%d). Closing because close_eof is enabled.",
+					h.state.Source, h.state.FileStateOS.Inode)
 			case ErrInactive:
-				logp.Info("File is inactive: %s. Closing because close_inactive of %v reached.", h.state.Source, h.config.CloseInactive)
+				logp.Info("File is inactive: %s(%d). Closing because close_inactive of %v reached.",
+					h.state.Source, h.state.FileStateOS.Inode, h.config.CloseInactive)
 			default:
-				logp.Err("Read line error: %s; File: ", err, h.state.Source)
+				logp.Err("Read line error: %s(%d); File: ", err, h.state.Source)
 			}
 			return
 		}
@@ -178,7 +184,7 @@ func (h *Harvester) sendEvent(event *input.Event) bool {
 // is started. As soon as the output becomes available again, the finished state is written
 // and processing can continue.
 func (h *Harvester) sendStateUpdate() {
-	logp.Debug("harvester", "Update state: %s, offset: %v", h.state.Source, h.state.Offset)
+	logp.Debug("harvester", "Update state: %s(%d), offset: %v", h.state.Source, h.state.FileStateOS.Inode, h.state.Offset)
 	event := input.NewEvent(h.state)
 	h.outlet.OnEvent(event)
 }
@@ -301,7 +307,7 @@ func (h *Harvester) close() {
 	// Mark harvester as finished
 	h.state.Finished = true
 
-	logp.Debug("harvester", "Stopping harvester for file: %s", h.state.Source)
+	logp.Debug("harvester", "Stopping harvester for file: %s(%d)", h.state.Source, h.state.FileStateOS.Inode)
 
 	// Make sure file is closed as soon as harvester exits
 	// If file was never opened, it can't be closed
@@ -310,14 +316,14 @@ func (h *Harvester) close() {
 		// close file handler
 		h.file.Close()
 
-		logp.Debug("harvester", "Closing file: %s", h.state.Source)
+		logp.Debug("harvester", "Closing file: %s(%d)", h.state.Source, h.state.FileStateOS.Inode)
 		harvesterOpenFiles.Add(-1)
 
 		// On completion, push offset so we can continue where we left off if we relaunch on the same file
 		// Only send offset if file object was created successfully
 		h.sendStateUpdate()
 	} else {
-		logp.Warn("Stopping harvester, NOT closing file as file info not available: %s", h.state.Source)
+		logp.Warn("Stopping harvester, NOT closing file as file info not available: %s(%d)", h.state.Source, h.state.FileStateOS.Inode)
 	}
 
 	harvesterClosed.Add(1)

@@ -165,6 +165,7 @@ func (r *LogFile) wait() {
 }
 
 func (r *LogFile) Close() {
+	logp.Debug("Logfile close, file source, file source name[%v]", r.fs.Name())
 	close(r.done)
 	// Note: File reader is not closed here because that leads to race conditions
 }

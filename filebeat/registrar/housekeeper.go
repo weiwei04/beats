@@ -92,7 +92,7 @@ func (h *HouseKeeper) Cleanup() {
 
 	timeoutStates := []file.State{}
 	h.states.CleanupWithFunc(func(state file.State) {
-		logp.Info("file[%+v] inactive", state.Source)
+		logp.Info("file[%+v](%d) inactive", state.Source, state.FileStateOS.Inode)
 		timeoutStates = append(timeoutStates, state)
 	})
 
@@ -102,12 +102,12 @@ func (h *HouseKeeper) Cleanup() {
 	// TODO: remove file size > xxx
 	for _, state := range timeoutStates {
 		if strings.HasSuffix(state.Source, "stderr") || strings.HasSuffix(state.Source, "stdout") {
-			logp.Info("ignore last inactive file %s", state.Source)
+			logp.Info("ignore last inactive file %s(%d)", state.Source, state.FileStateOS.Inode)
 			continue
 		}
 		dir := dirname(state.Source)
 		if dirs[dir].Len() > 1 {
-			logp.Info("remove inactive file %s", state.Source)
+			logp.Info("remove inactive file %s(%d)", state.Source, state.FileStateOS.Inode)
 			err := h.remove(state.Source)
 			if err != nil {
 				logp.Err("remove file failed, err[%s]", err)
@@ -115,7 +115,7 @@ func (h *HouseKeeper) Cleanup() {
 			dirs[dir].Remove(state)
 			count++
 		} else {
-			logp.Info("last inactive log file[%s], will not delete", state.Source)
+			logp.Info("last inactive log file[%s](%d), will not delete", state.Source, state.FileStateOS.Inode)
 		}
 	}
 	logp.Debug("TRACE", "housekeeper cleanup %d inactive files", count)
