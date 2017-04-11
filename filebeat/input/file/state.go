@@ -61,7 +61,7 @@ func (s *States) Update(newState State) {
 	} else {
 		// No existing state found, add new one
 		s.states = append(s.states, newState)
-		logp.Debug("prospector", "New state added for %s", newState.Source)
+		logp.Debug("prospector", "New state added for %s(%d)", newState.Source, newState.FileStateOS.Inode)
 	}
 }
 
@@ -106,10 +106,10 @@ func (s *States) Cleanup() int {
 
 		if state.TTL == 0 || expired {
 			if state.Finished {
-				logp.Debug("state", "State removed for %v because of older: %v", state.Source, state.TTL)
+				logp.Debug("state", "State removed for %v because of older: %v(%d)", state.Source, state.FileStateOS.Inode, state.TTL)
 				continue // drop state
 			} else {
-				logp.Err("State for %s should have been dropped, but couldn't as state is not finished.", state.Source)
+				logp.Err("State for %s(%d) should have been dropped, but couldn't as state is not finished.", state.Source, state.FileStateOS.Inode)
 			}
 		}
 
@@ -121,8 +121,8 @@ func (s *States) Cleanup() int {
 }
 
 func (s *States) CleanupWithFunc(fn func(state State)) int {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	statesBefore := len(s.states)
 
@@ -135,11 +135,11 @@ func (s *States) CleanupWithFunc(fn func(state State)) int {
 
 		if ttl == 0 || (ttl > 0 && currentTime.Sub(state.Timestamp) > ttl) {
 			if state.Finished {
-				logp.Debug("state", "State removed for %v because of older: %v", state.Source, ttl)
+				logp.Debug("state", "State removed for %v(%d) because of older: %v", state.Source, state.FileStateOS.Inode, ttl)
 				fn(state)
 				continue // drop state
 			} else {
-				logp.Err("State for %s should have been dropped, but couldn't as state is not finished.", state.Source)
+				logp.Err("State for %s(%d) should have been dropped, but couldn't as state is not finished.", state.Source, state.FileStateOS.Inode)
 			}
 		}
 
